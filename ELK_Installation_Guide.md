@@ -38,10 +38,20 @@ If additional storage is needed for Elasticsearch, use LVM for managing space ef
    lsblk
    
    pvcreate /dev/sdb1
+
+   pvs
    
    vgcreate mnggroup01 /dev/sdb1
+
+   pvs
+
+   vgs
    
    lvcreate -l +100%free -n mng mnggroup01
+
+   pvs
+
+   ll /dev/mapper
    
    mkfs.xfs /dev/mapper/mnggroup01-mng
    ```
@@ -50,6 +60,8 @@ If additional storage is needed for Elasticsearch, use LVM for managing space ef
 
    ```bash
    mount /dev/mapper/mnggroup01-mng /data
+
+   df
    ```
 
 3. **Persist Mount in `/etc/fstab`**:
@@ -76,7 +88,11 @@ If additional storage is needed for Elasticsearch, use LVM for managing space ef
 2. **Initial Configuration**:
     Configure security settings, including enabling authentication and setting TLS on transport and HTTP layers.
 
-3. **Edit Configuration** (`/etc/elasticsearch/elasticsearch.yml`):
+   ```bash
+    /usr/share/elasticsearch/bin/elasticsearch-reset-password -i -u  elastic
+    ```
+
+4. **Edit Configuration** (`/etc/elasticsearch/elasticsearch.yml`):
 
     ```yaml
     cluster.name: elkbim
@@ -92,15 +108,17 @@ If additional storage is needed for Elasticsearch, use LVM for managing space ef
     discovery.seed_hosts: ["192.168.56.101:9300"]
     ```
 
-4. **Create Data Directory**:
+5. **Create Data Directory**:
     ```bash
     mkdir -p /data/elastic
     chown elasticsearch:elasticsearch /data/elastic
     ```
 
-5. **Start and Verify Elasticsearch**:
+6. **Start and Verify Elasticsearch**:
     ```bash
     systemctl start elasticsearch.service
+
+    curl -k -u elastic 'elastic_password' -X GET http://192.168.56.101:9200/_cat/nodes
     
     curl -k -u elastic 'elastic_password' -X GET http://192.168.56.101:9200/_cat/nodes
     ```
@@ -108,6 +126,11 @@ If additional storage is needed for Elasticsearch, use LVM for managing space ef
 ### Node 2 (192.168.56.102)
 
 1. **Install Elasticsearch** and **Edit Configuration**:
+
+    ```bash
+    /usr/share/elasticsearch/bin/elasticsearch-reset-password -i -u  elastic
+    ```
+
     Similar to Node 1, configure the following in `/etc/elasticsearch/elasticsearch.yml`:
     ```yaml
     cluster.name: elkbim
@@ -123,25 +146,32 @@ If additional storage is needed for Elasticsearch, use LVM for managing space ef
     discovery.seed_hosts: ["192.168.56.101:9300", "192.168.56.102:9300"]
     ```
 
-2. **Data Directory**:
+3. **Data Directory**:
     ```bash
     mkdir -p /data/elastic
     chown elasticsearch:elasticsearch /data/elastic
     ```
 
-3. **Start Elasticsearch**:
+4. **Start Elasticsearch**:
     ```bash
     systemctl start elasticsearch.service
     ```
 
-4. **Verification**:
+5. **Verification**:
     ```bash
+    curl -k -u elastic 'elastic_password' -X GET http://192.168.56.102:9200/_cat/nodes
     curl -k -u elastic 'elastic_password' -X GET http://192.168.56.102:9200/_cat/nodes
     ```
 
 ### Node 3 (192.168.56.103)
 
-1. **Install Elasticsearch** and **Configure**:
+1. **Install Elasticsearch** and **Edit Configuration**:
+
+    ```bash
+    /usr/share/elasticsearch/bin/elasticsearch-reset-password -i -u  elastic
+    ```
+
+    Similar to Node 1, configure the following in `/etc/elasticsearch/elasticsearch.yml`:
     ```yaml
     cluster.name: elkbim
     
@@ -166,7 +196,7 @@ If additional storage is needed for Elasticsearch, use LVM for managing space ef
 3. **Start Elasticsearch** and **Verify Cluster Health**:
     ```bash
     systemctl start elasticsearch.service
-    
+    curl -k -u elastic 'elastic_password' -X GET http://192.168.56.103:9200/_cat/nodes
     curl -k -u elastic 'elastic_password' -X GET http://192.168.56.103:9200/_cluster/health?pretty
     ```
 
@@ -209,14 +239,19 @@ If additional storage is needed for Elasticsearch, use LVM for managing space ef
     elasticsearch.ssl.verificationMode: none
     ```
 
-3. **Start Kibana**:
     ```bash
-    systemctl start kibana.service
+    /usr/share/elasticsearch/bin/elasticsearch-reset-password -i -u  kibana_system
+    /usr/share/elasticsearch/bin/elasticsearch-create-enrollment-token -s kibana
     ```
 
-4. **Generate Kibana Enrollment Token**:
+3. **Generate Kibana Enrollment Token**:
     ```bash
     /usr/share/elasticsearch/bin/elasticsearch-create-enrollment-token -s kibana
+    ```
+
+4. **Start Kibana**:
+    ```bash
+    systemctl start kibana.service
     ```
 
 ---
